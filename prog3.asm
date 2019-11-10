@@ -18,18 +18,18 @@ int main(int argc, char *argv[])
    b:	89 e5                	mov    %esp,%ebp
    d:	51                   	push   %ecx
    e:	83 ec 10             	sub    $0x10,%esp
-	settick(15);
-  11:	6a 0f                	push   $0xf
+	settick(10);
+  11:	6a 0a                	push   $0xa
   13:	e8 22 03 00 00       	call   33a <settick>
   18:	83 c4 10             	add    $0x10,%esp
-  1b:	ba 10 27 00 00       	mov    $0x2710,%edx
+  1b:	ba 40 9c 00 00       	mov    $0x9c40,%edx
 	int i,k;
-	const int loop=10000;
+	const int loop=40000;
 	for(i=0;i<loop;i++)
 	{
 		asm("nop");
   20:	90                   	nop
-  21:	b8 10 27 00 00       	mov    $0x2710,%eax
+  21:	b8 40 9c 00 00       	mov    $0x9c40,%eax
   26:	8d 76 00             	lea    0x0(%esi),%esi
   29:	8d bc 27 00 00 00 00 	lea    0x0(%edi,%eiz,1),%edi
 		for(k=0;k<loop;k++)

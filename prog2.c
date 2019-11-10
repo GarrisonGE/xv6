@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
 	settick(20);
 	int i,k;
-	const int loop=10000;
+	const int loop=40000;
 	for(i=0;i<loop;i++)
 	{
 		asm("nop");

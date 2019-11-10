@@ -391,131 +391,134 @@ wait(void)
 //}
 
 //the lottery scheduling
-//void
-//scheduler(void)
-//{
-//  struct proc *p;
-//  struct cpu *c=mycpu();
-//  c->proc=0;
-//  int ticks=0;
-//
-//  for(;;){
-//    // Enable interrupts on this processor.
-//    sti();
-//
-//    acquire(&ptable.lock);
-//    int tickets_passed=0;
-//    int totalTickets = 0;
-//
-//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//      if(p->state != RUNNABLE)
-//        continue;
-//      totalTickets = totalTickets + p->tickets;
-//    }
-//
-//    int winner = random_at_most(totalTickets);
-//
-//
-//
-//    // Loop over process table looking for process to run.
-//
-//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//      if(p->state != RUNNABLE){
-//
-//        continue;
-//      }
-//      tickets_passed += p->tickets;
-//      if(tickets_passed<winner){
-//        continue;
-//      }
-//     // cprintf("tickets are : %d ,  rand no is %ld\n",p->tickets , random_at_most(10000));
-//      // Switch to chosen process.  It is the process's job
-//      // to release ptable.lock and then reacquire it
-//      // before jumping back to us.
-//
-//      c->proc = p;
-//      switchuvm(p);
-//      p->state = RUNNING;
-//      ticks=p->ticks;
-//      ticks++;
-//      p->ticks=ticks;
-//      swtch(&c->scheduler, p->context);
-//      switchkvm();
-//
-//      // Process is done running for now.
-//      // It should have changed its p->state before coming back.
-//      c->proc = 0;
-//
-//    }
-//    release(&ptable.lock);
-//
-//  }
-//}
-//the stride scheduling
 void
 scheduler(void)
 {
- struct proc *p;
- struct cpu *c = mycpu();
- struct proc *tmpp;
- int ticks=0;
- int str=0;
- c->proc = 0;
+  struct proc *p;
+  struct cpu *c=mycpu();
+  int ticks=0;
+  c->proc=0;
+
+ 
 
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    tmpp=ptable.proc;
+    int tickets_passed=0;
+    int totalTickets = 0;
+ 
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE){
-	       	continue;
-	}
-        if(p->passvalue<tmpp->passvalue)
-	{
-		tmpp=p;
-	}
-
+      if(p->state != RUNNABLE)
+        continue;
+      totalTickets = totalTickets + p->tickets;
     }
 
+    int winner = random_at_most(totalTickets);
+
+
+
+    // Loop over process table looking for process to run.
+
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-        {
-   	     continue;
-        }
-        if(p->passvalue!=tmpp->passvalue)
-   	{
-   		continue;
-   	}
+      if(p->state != RUNNABLE){
 
-
+        continue;
+      }
+      tickets_passed += p->tickets;
+      if(tickets_passed<winner){
+        continue;
+      }
+     // cprintf("tickets are : %d ,  rand no is %ld\n",p->tickets , random_at_most(10000));
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
-      //
-      str=p->stride;
-      p->passvalue=p->passvalue+str;
-      ticks=p->ticks;
-      ticks++;
-      p->ticks=ticks;
-
 
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      swtch(&(c->scheduler), p->context);
+      ticks=p->ticks;
+      ticks++;
+      p->ticks=ticks;
+      swtch(&c->scheduler, p->context);
       switchkvm();
-    
+
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       c->proc = 0;
+     break;
     }
     release(&ptable.lock);
 
   }
 }
+//the stride scheduling
+//void
+//scheduler(void)
+//{
+// struct proc *p;
+// struct cpu *c = mycpu();
+// struct proc *tmpp;
+// int ticks=0;
+// int str=0;
+// c->proc = 0;
+//
+//  for(;;){
+//    // Enable interrupts on this processor.
+//    sti();
+//
+//    // Loop over process table looking for process to run.
+//    acquire(&ptable.lock);
+//    tmpp=ptable.proc;
+//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//        if(p->state != RUNNABLE){
+//	       	continue;
+//	}
+//        if(p->passvalue<tmpp->passvalue)
+//	{
+//		tmpp=p;
+//	}
+//
+//    }
+//
+//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//        if(p->state != RUNNABLE)
+//        {
+//   	     continue;
+//        }
+//        if(p->passvalue!=tmpp->passvalue)
+//   	{
+//   		continue;
+//   	}
+//
+//
+//      // Switch to chosen process.  It is the process's job
+//      // to release ptable.lock and then reacquire it
+//      // before jumping back to us.
+//      //
+//      str=p->stride;
+//      p->passvalue=p->passvalue+str;
+//      ticks=p->ticks;
+//      ticks++;
+//      p->ticks=ticks;
+//
+//
+//      c->proc = p;
+//      switchuvm(p);
+//      p->state = RUNNING;
+//      swtch(&(c->scheduler), p->context);
+//      switchkvm();
+//    
+//      // Process is done running for now.
+//      // It should have changed its p->state before coming back.
+//      c->proc = 0;
+//      break;
+//    }
+//    release(&ptable.lock);
+//
+//  }
+//}
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
