@@ -391,135 +391,135 @@ wait(void)
 //}
 
 //the lottery scheduling
-//void
-//scheduler(void)
-//{
-//  struct proc *p;
-//  struct cpu *c=mycpu();
-// 
-//  c->proc=0;
-//
-// 
-//
-//  for(;;){
-//    // Enable interrupts on this processor.
-//    sti();
-//
-//    acquire(&ptable.lock);
-//    int tickets_passed=0;
-//    int totalTickets = 0;
-//    //cound the number of all processes' tickets
-//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//      if(p->state != RUNNABLE)
-//        continue;
-//      totalTickets = totalTickets + p->tickets;
-//    }
-//
-//    int winner = random_at_most(totalTickets);
-//
-//
-//
-//    // Loop over process table looking for process to run.
-//
-//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//      if(p->state != RUNNABLE){
-//
-//        continue;
-//      }
-//      tickets_passed += p->tickets;
-//      if(tickets_passed<winner){
-//        continue;
-//      }
-//   
-//      // Switch to chosen process.  It is the process's job
-//      // to release ptable.lock and then reacquire it
-//      // before jumping back to us.
-//
-//      c->proc = p;
-//      switchuvm(p);
-//      p->state = RUNNING;
-//      p->ticks=p->ticks+1;//add tick
-//
-//      swtch(&c->scheduler, p->context);
-//      switchkvm();
-//
-//      // Process is done running for now.
-//      // It should have changed its p->state before coming back.
-//      c->proc = 0;
-//     break;
-//    }
-//    release(&ptable.lock);
-//
-//  }
-//}
+// void
+// scheduler(void)
+// {
+//   struct proc *p;
+//   struct cpu *c=mycpu();
+ 
+//   c->proc=0;
+
+ 
+
+//   for(;;){
+//     // Enable interrupts on this processor.
+//     sti();
+
+//     acquire(&ptable.lock);
+//     int tics=0;
+//     int totalTickets = 0;
+//     //cound the number of all processes' tickets
+//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//       if(p->state != RUNNABLE)
+//         continue;
+//       totalTickets = totalTickets + p->tickets;
+//     }
+
+//     int select = random_at_most(totalTickets);
+
+
+
+//     // Loop over process table looking for process to run.
+
+//     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//       if(p->state != RUNNABLE){
+
+//         continue;
+//       }
+//       tics += p->tickets;
+//       if(tics<select){
+//         continue;
+//       }
+   
+//       // Switch to chosen process.  It is the process's job
+//       // to release ptable.lock and then reacquire it
+//       // before jumping back to us.
+
+//       c->proc = p;
+//       switchuvm(p);
+//       p->state = RUNNING;
+//       p->ticks=p->ticks+1;//add tick
+
+//       swtch(&c->scheduler, p->context);
+//       switchkvm();
+
+//       // Process is done running for now.
+//       // It should have changed its p->state before coming back.
+//       c->proc = 0;
+//      break;
+//     }
+//     release(&ptable.lock);
+
+//   }
+// }
 //the stride scheduling
 void
 scheduler(void)
 {
- struct proc *p;
- struct cpu *c = mycpu();
- c->proc = 0;
+struct proc *p;
+struct cpu *c = mycpu();
+c->proc = 0;
 
-  for(;;){
-    // Enable interrupts on this processor.
-    sti();
+ for(;;){
+   // Enable interrupts on this processor.
+   sti();
 
-    // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
-    int minpass=0;
-    for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
-    {
-        if(p->state!=RUNNABLE)
-                continue;
-        minpass=p->passvalue;
-        break;
-    }
-  //find the miniuxm value of runnable processes;  
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE){
+   // Loop over process table looking for process to run.
+   acquire(&ptable.lock);
+   int minpass=0;
+   for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+   {
+       if(p->state!=RUNNABLE)
+               continue;
+       minpass=p->passvalue;
+       break;
+   }
+ //find the miniuxm value of runnable processes;  
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+       if(p->state != RUNNABLE){
 	       	continue;
 	}
-        if(p->passvalue<minpass)
+       if(p->passvalue<minpass)
 	{
 		minpass=p->passvalue;
 	}
 
-    }
+   }
 
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-        {
-   	     continue;
-        }
-        if(p->passvalue!=minpass)
-   	{
-   		continue;
-   	}
-
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      //
-      //add the passvalue and ticks
-      p->passvalue=p->passvalue+p->stride;
-      p->ticks=p->ticks+1;
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+       if(p->state != RUNNABLE)
+       {
+  	     continue;
+       }
+       if(p->passvalue!=minpass)
+  	{
+  		continue;
+  	}
 
 
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-    
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
-      break;
-    }
-    release(&ptable.lock);
+     // Switch to chosen process.  It is the process's job
+     // to release ptable.lock and then reacquire it
+     // before jumping back to us.
+     //
+     //add the passvalue and ticks
+     p->passvalue=p->passvalue+p->stride;
+     p->ticks=p->ticks+1;
 
-  }
+
+     c->proc = p;
+     switchuvm(p);
+     p->state = RUNNING;
+     swtch(&(c->scheduler), p->context);
+     switchkvm();
+   
+     // Process is done running for now.
+     // It should have changed its p->state before coming back.
+     c->proc = 0;
+     break;
+   }
+   release(&ptable.lock);
+
+ }
 }
 
 // Enter scheduler.  Must hold only ptable.lock
@@ -766,3 +766,32 @@ int settick(int tick)
 	return 23;
 
 }
+int tickprintf(int para)
+{   
+    if(para==0) return 24;
+    struct proc *p;  
+    static char *states[] = {
+    [UNUSED]    "unused",
+    [EMBRYO]    "embryo",
+    [SLEEPING]  "sleep ",
+    [RUNNABLE]  "runble",
+    [RUNNING]   "run   ",
+    [ZOMBIE]    "zombie"
+    };
+ 
+   
+    char *state;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == UNUSED)
+        continue;
+     
+      if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+        state = states[p->state];
+      else
+        state = "???";
+      if(p->state==RUNNING||p->state==RUNNABLE){
+      cprintf("From  %s-%d: %d %s %s sched_times=%d ticket=%d \n", myproc()->name, myproc()->pid, p->pid, state, p->name, p->ticks, p->tickets);
+     } 
+    }
+ return 24;
+} 

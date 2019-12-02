@@ -25,6 +25,7 @@ int sleep(int);
 int uptime(void);
 int info(int);
 int settick(int);
+int tickprintf(int);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

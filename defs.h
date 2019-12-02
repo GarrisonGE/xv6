@@ -122,6 +122,7 @@ void            wakeup(void*);
 void            yield(void);
 int             info(int);
 int             settick(int);
+int             tickprintf(int);
 // swtch.S
 void            swtch(struct context**, struct context*);
 

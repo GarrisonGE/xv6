@@ -1,27 +1,36 @@
 
-_zombie:     file format elf32-i386
+_zombie：     文件格式 elf32-i386
 
 
 Disassembly of section .text:
 
 00000000 <main>:
-   0:	8d 4c 24 04          	lea    0x4(%esp),%ecx
-   4:	83 e4 f0             	and    $0xfffffff0,%esp
-   7:	ff 71 fc             	pushl  -0x4(%ecx)
-   a:	55                   	push   %ebp
-   b:	89 e5                	mov    %esp,%ebp
-   d:	51                   	push   %ecx
-   e:	83 ec 04             	sub    $0x4,%esp
-  11:	e8 34 02 00 00       	call   24a <fork>
-  16:	85 c0                	test   %eax,%eax
-  18:	7e 0d                	jle    27 <main+0x27>
-  1a:	83 ec 0c             	sub    $0xc,%esp
-  1d:	6a 05                	push   $0x5
-  1f:	e8 be 02 00 00       	call   2e2 <sleep>
-  24:	83 c4 10             	add    $0x10,%esp
-  27:	e8 26 02 00 00       	call   252 <exit>
-  2c:	66 90                	xchg   %ax,%ax
-  2e:	66 90                	xchg   %ax,%ax
+#include "stat.h"
+#include "user.h"
+
+int
+main(void)
+{
+   0:	55                   	push   %ebp
+   1:	89 e5                	mov    %esp,%ebp
+   3:	83 e4 f0             	and    $0xfffffff0,%esp
+   6:	83 ec 10             	sub    $0x10,%esp
+  if(fork() > 0)
+   9:	e8 3c 02 00 00       	call   24a <fork>
+   e:	85 c0                	test   %eax,%eax
+  10:	7e 0c                	jle    1e <main+0x1e>
+    sleep(5);  // Let child exit before parent.
+  12:	c7 04 24 05 00 00 00 	movl   $0x5,(%esp)
+  19:	e8 c4 02 00 00       	call   2e2 <sleep>
+  exit();
+  1e:	e8 2f 02 00 00       	call   252 <exit>
+  23:	66 90                	xchg   %ax,%ax
+  25:	66 90                	xchg   %ax,%ax
+  27:	66 90                	xchg   %ax,%ax
+  29:	66 90                	xchg   %ax,%ax
+  2b:	66 90                	xchg   %ax,%ax
+  2d:	66 90                	xchg   %ax,%ax
+  2f:	90                   	nop
 
 00000030 <strcpy>:
 #include "user.h"
@@ -406,123 +415,153 @@ memmove(void *vdst, const void *vsrc, int n)
  249:	c3                   	ret    
 
 0000024a <fork>:
+  name: \
+    movl $SYS_ ## name, %eax; \
+    int $T_SYSCALL; \
+    ret
+
+SYSCALL(fork)
  24a:	b8 01 00 00 00       	mov    $0x1,%eax
  24f:	cd 40                	int    $0x40
  251:	c3                   	ret    
 
 00000252 <exit>:
+SYSCALL(exit)
  252:	b8 02 00 00 00       	mov    $0x2,%eax
  257:	cd 40                	int    $0x40
  259:	c3                   	ret    
 
 0000025a <wait>:
+SYSCALL(wait)
  25a:	b8 03 00 00 00       	mov    $0x3,%eax
  25f:	cd 40                	int    $0x40
  261:	c3                   	ret    
 
 00000262 <pipe>:
+SYSCALL(pipe)
  262:	b8 04 00 00 00       	mov    $0x4,%eax
  267:	cd 40                	int    $0x40
  269:	c3                   	ret    
 
 0000026a <read>:
+SYSCALL(read)
  26a:	b8 05 00 00 00       	mov    $0x5,%eax
  26f:	cd 40                	int    $0x40
  271:	c3                   	ret    
 
 00000272 <write>:
+SYSCALL(write)
  272:	b8 10 00 00 00       	mov    $0x10,%eax
  277:	cd 40                	int    $0x40
  279:	c3                   	ret    
 
 0000027a <close>:
+SYSCALL(close)
  27a:	b8 15 00 00 00       	mov    $0x15,%eax
  27f:	cd 40                	int    $0x40
  281:	c3                   	ret    
 
 00000282 <kill>:
+SYSCALL(kill)
  282:	b8 06 00 00 00       	mov    $0x6,%eax
  287:	cd 40                	int    $0x40
  289:	c3                   	ret    
 
 0000028a <exec>:
+SYSCALL(exec)
  28a:	b8 07 00 00 00       	mov    $0x7,%eax
  28f:	cd 40                	int    $0x40
  291:	c3                   	ret    
 
 00000292 <open>:
+SYSCALL(open)
  292:	b8 0f 00 00 00       	mov    $0xf,%eax
  297:	cd 40                	int    $0x40
  299:	c3                   	ret    
 
 0000029a <mknod>:
+SYSCALL(mknod)
  29a:	b8 11 00 00 00       	mov    $0x11,%eax
  29f:	cd 40                	int    $0x40
  2a1:	c3                   	ret    
 
 000002a2 <unlink>:
+SYSCALL(unlink)
  2a2:	b8 12 00 00 00       	mov    $0x12,%eax
  2a7:	cd 40                	int    $0x40
  2a9:	c3                   	ret    
 
 000002aa <fstat>:
+SYSCALL(fstat)
  2aa:	b8 08 00 00 00       	mov    $0x8,%eax
  2af:	cd 40                	int    $0x40
  2b1:	c3                   	ret    
 
 000002b2 <link>:
+SYSCALL(link)
  2b2:	b8 13 00 00 00       	mov    $0x13,%eax
  2b7:	cd 40                	int    $0x40
  2b9:	c3                   	ret    
 
 000002ba <mkdir>:
+SYSCALL(mkdir)
  2ba:	b8 14 00 00 00       	mov    $0x14,%eax
  2bf:	cd 40                	int    $0x40
  2c1:	c3                   	ret    
 
 000002c2 <chdir>:
+SYSCALL(chdir)
  2c2:	b8 09 00 00 00       	mov    $0x9,%eax
  2c7:	cd 40                	int    $0x40
  2c9:	c3                   	ret    
 
 000002ca <dup>:
+SYSCALL(dup)
  2ca:	b8 0a 00 00 00       	mov    $0xa,%eax
  2cf:	cd 40                	int    $0x40
  2d1:	c3                   	ret    
 
 000002d2 <getpid>:
+SYSCALL(getpid)
  2d2:	b8 0b 00 00 00       	mov    $0xb,%eax
  2d7:	cd 40                	int    $0x40
  2d9:	c3                   	ret    
 
 000002da <sbrk>:
+SYSCALL(sbrk)
  2da:	b8 0c 00 00 00       	mov    $0xc,%eax
  2df:	cd 40                	int    $0x40
  2e1:	c3                   	ret    
 
 000002e2 <sleep>:
+SYSCALL(sleep)
  2e2:	b8 0d 00 00 00       	mov    $0xd,%eax
  2e7:	cd 40                	int    $0x40
  2e9:	c3                   	ret    
 
 000002ea <uptime>:
+SYSCALL(uptime)
  2ea:	b8 0e 00 00 00       	mov    $0xe,%eax
  2ef:	cd 40                	int    $0x40
  2f1:	c3                   	ret    
 
 000002f2 <info>:
+SYSCALL(info)
  2f2:	b8 16 00 00 00       	mov    $0x16,%eax
  2f7:	cd 40                	int    $0x40
  2f9:	c3                   	ret    
 
 000002fa <settick>:
+SYSCALL(settick)
  2fa:	b8 17 00 00 00       	mov    $0x17,%eax
  2ff:	cd 40                	int    $0x40
  301:	c3                   	ret    
- 302:	66 90                	xchg   %ax,%ax
- 304:	66 90                	xchg   %ax,%ax
- 306:	66 90                	xchg   %ax,%ax
- 308:	66 90                	xchg   %ax,%ax
+
+00000302 <tickprintf>:
+SYSCALL(tickprintf)
+ 302:	b8 18 00 00 00       	mov    $0x18,%eax
+ 307:	cd 40                	int    $0x40
+ 309:	c3                   	ret    
  30a:	66 90                	xchg   %ax,%ax
  30c:	66 90                	xchg   %ax,%ax
  30e:	66 90                	xchg   %ax,%ax
@@ -877,7 +916,7 @@ free(void *ap)
 
   bp = (Header*)ap - 1;
   for(p = freep; !(bp > p && bp < p->s.ptr); p = p->s.ptr)
- 5a1:	a1 9c 09 00 00       	mov    0x99c,%eax
+ 5a1:	a1 94 09 00 00       	mov    0x994,%eax
 {
  5a6:	89 e5                	mov    %esp,%ebp
  5a8:	57                   	push   %edi
@@ -931,7 +970,7 @@ free(void *ap)
     p->s.ptr = bp;
  5e7:	89 10                	mov    %edx,(%eax)
   freep = p;
- 5e9:	a3 9c 09 00 00       	mov    %eax,0x99c
+ 5e9:	a3 94 09 00 00       	mov    %eax,0x994
 }
  5ee:	5b                   	pop    %ebx
  5ef:	5e                   	pop    %esi
@@ -955,7 +994,7 @@ free(void *ap)
     p->s.size += bp->s.size;
  60f:	03 4b fc             	add    -0x4(%ebx),%ecx
   freep = p;
- 612:	a3 9c 09 00 00       	mov    %eax,0x99c
+ 612:	a3 94 09 00 00       	mov    %eax,0x994
     p->s.size += bp->s.size;
  617:	89 48 04             	mov    %ecx,0x4(%eax)
     p->s.ptr = bp->s.ptr;
@@ -989,7 +1028,7 @@ malloc(uint nbytes)
   nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
  639:	8b 45 08             	mov    0x8(%ebp),%eax
   if((prevp = freep) == 0){
- 63c:	8b 1d 9c 09 00 00    	mov    0x99c,%ebx
+ 63c:	8b 1d 94 09 00 00    	mov    0x994,%ebx
   nunits = (nbytes + sizeof(Header) - 1)/sizeof(Header) + 1;
  642:	8d 48 07             	lea    0x7(%eax),%ecx
  645:	c1 e9 03             	shr    $0x3,%ecx
@@ -1027,7 +1066,7 @@ malloc(uint nbytes)
       return (void*)(p + 1);
     }
     if(p == freep)
- 67b:	3b 15 9c 09 00 00    	cmp    0x99c,%edx
+ 67b:	3b 15 94 09 00 00    	cmp    0x994,%edx
  681:	75 ed                	jne    670 <malloc+0x40>
   if(nu < 4096)
  683:	8b 45 e4             	mov    -0x1c(%ebp),%eax
@@ -1048,7 +1087,7 @@ malloc(uint nbytes)
  6aa:	89 04 24             	mov    %eax,(%esp)
  6ad:	e8 ee fe ff ff       	call   5a0 <free>
   return freep;
- 6b2:	8b 15 9c 09 00 00    	mov    0x99c,%edx
+ 6b2:	8b 15 94 09 00 00    	mov    0x994,%edx
       if((p = morecore(nunits)) == 0)
  6b8:	85 d2                	test   %edx,%edx
  6ba:	75 b4                	jne    670 <malloc+0x40>
@@ -1070,7 +1109,7 @@ malloc(uint nbytes)
         p->s.size = nunits;
  6d4:	89 70 04             	mov    %esi,0x4(%eax)
       freep = prevp;
- 6d7:	89 15 9c 09 00 00    	mov    %edx,0x99c
+ 6d7:	89 15 94 09 00 00    	mov    %edx,0x994
       return (void*)(p + 1);
  6dd:	83 c0 08             	add    $0x8,%eax
   }
@@ -1086,14 +1125,14 @@ malloc(uint nbytes)
  6ea:	89 0a                	mov    %ecx,(%edx)
  6ec:	eb e9                	jmp    6d7 <malloc+0xa7>
     base.s.ptr = freep = prevp = &base;
- 6ee:	c7 05 9c 09 00 00 a0 	movl   $0x9a0,0x99c
+ 6ee:	c7 05 94 09 00 00 98 	movl   $0x998,0x994
  6f5:	09 00 00 
     base.s.size = 0;
- 6f8:	ba a0 09 00 00       	mov    $0x9a0,%edx
+ 6f8:	ba 98 09 00 00       	mov    $0x998,%edx
     base.s.ptr = freep = prevp = &base;
- 6fd:	c7 05 a0 09 00 00 a0 	movl   $0x9a0,0x9a0
+ 6fd:	c7 05 98 09 00 00 98 	movl   $0x998,0x998
  704:	09 00 00 
     base.s.size = 0;
- 707:	c7 05 a4 09 00 00 00 	movl   $0x0,0x9a4
+ 707:	c7 05 9c 09 00 00 00 	movl   $0x0,0x99c
  70e:	00 00 00 
  711:	e9 46 ff ff ff       	jmp    65c <malloc+0x2c>

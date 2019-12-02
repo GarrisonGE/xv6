@@ -9,9 +9,11 @@ int main(int argc, char *argv[])
 	const int loop=40000;
 	for(i=0;i<loop;i++)
 	{
-		asm("nop");
-		for(k=0;k<loop;k++)
+		asm("nop");	
+	//	if(i%1000==0){ tickprintf(1);}	
+	for(k=0;k<loop;k++)
 		{
+			
 			asm("nop");
 		}
 	}

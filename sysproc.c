@@ -119,3 +119,12 @@ sys_settick(void)
 	argint(0,&tick);
 	return settick(tick);
 }
+int
+sys_tickprintf(void)
+{ 
+  int para;
+  argint(0,&para);
+  if(para==0) return tickprintf(0);
+  else 
+  return tickprintf(1);
+}

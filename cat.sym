@@ -14,7 +14,7 @@
 00000000 ulib.c
 00000000 printf.c
 00000400 printint
-00000845 digits.1358
+00000845 digits.1360
 00000000 umalloc.c
 00000b00 freep
 00000b04 base
@@ -22,6 +22,7 @@
 00000120 strcpy
 000004a0 printf
 000003ea settick
+000003f2 tickprintf
 00000310 memmove
 0000038a mknod
 00000230 gets
