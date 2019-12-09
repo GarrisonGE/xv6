@@ -52,7 +52,7 @@ main(void)
 {
   46:	83 ec 14             	sub    $0x14,%esp
   printf(1, "fork test\n");
-  49:	c7 44 24 04 fc 03 00 	movl   $0x3fc,0x4(%esp)
+  49:	c7 44 24 04 04 04 00 	movl   $0x404,0x4(%esp)
   50:	00 
   51:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   58:	e8 b3 ff ff ff       	call   10 <printf>
@@ -89,7 +89,7 @@ main(void)
   9f:	90                   	nop
   a0:	75 60                	jne    102 <forktest+0xc2>
   printf(1, "fork test OK\n");
-  a2:	c7 44 24 04 2e 04 00 	movl   $0x42e,0x4(%esp)
+  a2:	c7 44 24 04 36 04 00 	movl   $0x436,0x4(%esp)
   a9:	00 
   aa:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   b1:	e8 5a ff ff ff       	call   10 <printf>
@@ -100,9 +100,9 @@ main(void)
   bb:	c3                   	ret    
   bc:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
   write(fd, s, strlen(s));
-  c0:	c7 04 24 3c 04 00 00 	movl   $0x43c,(%esp)
+  c0:	c7 04 24 44 04 00 00 	movl   $0x444,(%esp)
   c7:	e8 d4 00 00 00       	call   1a0 <strlen>
-  cc:	c7 44 24 04 3c 04 00 	movl   $0x43c,0x4(%esp)
+  cc:	c7 44 24 04 44 04 00 	movl   $0x444,0x4(%esp)
   d3:	00 
   d4:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   db:	89 44 24 08          	mov    %eax,0x8(%esp)
@@ -110,14 +110,14 @@ main(void)
     exit();
   e4:	e8 59 02 00 00       	call   342 <exit>
       printf(1, "wait stopped early\n");
-  e9:	c7 44 24 04 07 04 00 	movl   $0x407,0x4(%esp)
+  e9:	c7 44 24 04 0f 04 00 	movl   $0x40f,0x4(%esp)
   f0:	00 
   f1:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
   f8:	e8 13 ff ff ff       	call   10 <printf>
       exit();
   fd:	e8 40 02 00 00       	call   342 <exit>
     printf(1, "wait got too many\n");
- 102:	c7 44 24 04 1b 04 00 	movl   $0x41b,0x4(%esp)
+ 102:	c7 44 24 04 23 04 00 	movl   $0x423,0x4(%esp)
  109:	00 
  10a:	c7 04 24 01 00 00 00 	movl   $0x1,(%esp)
  111:	e8 fa fe ff ff       	call   10 <printf>
@@ -657,3 +657,9 @@ SYSCALL(tickprintf)
  3f2:	b8 18 00 00 00       	mov    $0x18,%eax
  3f7:	cd 40                	int    $0x40
  3f9:	c3                   	ret    
+
+000003fa <clone>:
+SYSCALL(clone)
+ 3fa:	b8 19 00 00 00       	mov    $0x19,%eax
+ 3ff:	cd 40                	int    $0x40
+ 401:	c3                   	ret    

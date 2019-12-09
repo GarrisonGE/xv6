@@ -54,6 +54,8 @@ struct proc {
   long passvalue;	       //the passvalue of process for stride scheduling
   int stride;                  //the stride of process for stride scheduling
   int ticks;		       //the number of times the processes was scheduled to run;
+  int numofthread;      //the number of threads created by current process
+  int isthread;         //judge if this procress is a thread
 
 };
 

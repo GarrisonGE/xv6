@@ -95,6 +95,8 @@ found:
   p->stride=60/p->tickets;
   p->passvalue=p->stride;
   p->ticks=0;
+  p->numofthread = 0;
+  p->isthread = 0;
 
   release(&ptable.lock);
 
@@ -229,6 +231,50 @@ fork(void)
 
   return pid;
 }
+int
+clone(void* stack, int size)
+{
+  int i;
+  int pid;
+  struct proc *np;
+  struct proc *curproc = myproc();
+  //Allocate process.
+  if((np = allocproc()) == 0 )
+  {
+    return -1;
+  }
+  //parent process's number of thread need to add 1
+  curproc->numofthread+=1;
+  np->pgdir = curproc->pgdir;
+  np->sz = curproc->sz;
+  np->parent = curproc;
+  *np->tf = *curproc->tf;
+  np->isthread = 1;//mark that this is a thread
+  
+  void *startCopy = (void*)curproc->tf->ebp+16;//add parameter in arg
+  void *endCopy = (void*)curproc->tf->esp;
+  uint copySize = (uint)(startCopy - endCopy);
+  
+  np->tf->esp = (uint)(stack + PGSIZE - copySize);
+  np->tf->ebp = (uint)(stack + PGSIZE-16);
+  memmove(stack + PGSIZE - copySize, endCopy, copySize);
+  
+  //clear %eax so that clone returns 0 in the child.
+  np->tf->eax = 0;
+  //let thread use same file describer
+  for(i = 0; i < NOFILE; i++)
+    if(curproc->ofile[i])
+      np->ofile[i] = curproc->ofile[i];
+  np->cwd = idup(curproc->cwd);
+
+  safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+  pid = np->pid;
+  acquire(&ptable.lock);
+  np->state = RUNNABLE;
+  release(&ptable.lock);
+  return pid;
+
+}
 
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
@@ -239,40 +285,74 @@ exit(void)
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
-    /*-------The following code is added to format the output--------*/
-    /* NOTE that you need to replace sched_times in the cprintf with whatever you use to record the execution time */
-    static char *states[] = {
-    [UNUSED]    "unused",
-    [EMBRYO]    "embryo",
-    [SLEEPING]  "sleep ",
-    [RUNNABLE]  "runble",
-    [RUNNING]   "run   ",
-    [ZOMBIE]    "zombie"
-    };
-   
-    char *state;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state == UNUSED)
-        continue;
-      if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
-        state = states[p->state];
-      else
-        state = "???";
-      
-      cprintf("From  %s-%d: %d %s %s sched_times=%d ticket=%d \n", myproc()->name, myproc()->pid, p->pid, state, p->name, p->ticks, p->tickets);
-    }
-    /*------------------patch end------------------------ */
+  struct proc *pp = curproc->parent;
+    // /*-------The following code is added to format the output--------*/
+    // /* NOTE that you need to replace sched_times in the cprintf with whatever you use to record the execution time */
+  //  static char *states[] = {
+  //  [UNUSED]    "unused",
+  //  [EMBRYO]    "embryo",
+  //  [SLEEPING]  "sleep ",
+  //  [RUNNABLE]  "runble",
+  //  [RUNNING]   "run   ",
+  //  [ZOMBIE]    "zombie"
+  //  };
+  // 
+  //  char *state;
+  //  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+  //    if(p->state == UNUSED)
+  //      continue;
+  //    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+  //      state = states[p->state];
+  //    else
+  //      state = "???";
+  // 
+  //    cprintf("From  %s-%d: %d %s %s sched_times=%d ticket=%d \n", myproc()->name, myproc()->pid, p->pid, state, p->name, p->ticks, p->tickets);
+  //  }
+    // /*------------------patch end------------------------ */
 
   if(curproc == initproc)
     panic("init exiting");
 
   // Close all open files.
-  for(fd = 0; fd < NOFILE; fd++){
-    if(curproc->ofile[fd]){
-      fileclose(curproc->ofile[fd]);
-      curproc->ofile[fd] = 0;
+  if(curproc->isthread ==1)
+  {
+    if((pp->numofthread ==1)&&(pp->state== ZOMBIE))
+    {
+      for(fd = 0; fd < NOFILE; fd++)
+      {
+        if(curproc->ofile[fd])
+        {
+          fileclose(curproc->ofile[fd]);
+          curproc->ofile[fd] = 0;
+        }
+      }
     }
   }
+  else
+  {
+    if(curproc->numofthread==0)
+    {
+      for(fd = 0; fd < NOFILE; fd++)
+      {
+        if(curproc->ofile[fd])
+        {
+          fileclose(curproc->ofile[fd]);
+          curproc->ofile[fd] = 0;
+        }
+      }
+    }
+  }
+  if(curproc->isthread==1)
+  {
+    pp->numofthread-=1;
+  }
+  // for(fd = 0; fd < NOFILE; fd++)
+  // {
+  //   if(curproc->ofile[fd]){
+  //     fileclose(curproc->ofile[fd]);
+  //     curproc->ofile[fd] = 0;
+  //     }
+  // }
 
   begin_op();
   iput(curproc->cwd);
@@ -287,6 +367,7 @@ exit(void)
   // Pass abandoned children to init.
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->parent == curproc){
+      initproc->numofthread=curproc->numofthread;
       p->parent = initproc;
       if(p->state == ZOMBIE)
         wakeup1(initproc);
@@ -299,6 +380,7 @@ exit(void)
   panic("zombie exit");
  
 }
+
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
@@ -322,7 +404,10 @@ wait(void)
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
-        freevm(p->pgdir);
+        if(p->pgdir!=curproc->pgdir)
+        {
+          freevm(p->pgdir);
+        }
         p->pid = 0;
         p->parent = 0;
         p->name[0] = 0;
@@ -354,41 +439,41 @@ wait(void)
 //      via swtch back to the scheduler.
 
 //the inherent version of scheduler
-//void
-//scheduler(void)
-//{
-// struct proc *p;
-// struct cpu *c = mycpu();
-// c->proc = 0;
-//
-//  for(;;){
-//    // Enable interrupts on this processor.
-//    sti();
-//
-//    // Loop over process table looking for process to run.
-//    acquire(&ptable.lock);
-//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-//     if(p->state != RUNNABLE)
-//        continue;
-//
-//      // Switch to chosen process.  It is the process's job
-//      // to release ptable.lock and then reacquire it
-//      // before jumping back to us.
-//      c->proc = p;
-//      switchuvm(p);
-//      p->state = RUNNING;
-//
-//      swtch(&(c->scheduler), p->context);
-//      switchkvm();
-//
-//      // Process is done running for now.
-//      // It should have changed its p->state before coming back.
-//      c->proc = 0;
-//    }
-//    release(&ptable.lock);
-//
-//  }
-//}
+void
+scheduler(void)
+{
+struct proc *p;
+struct cpu *c = mycpu();
+c->proc = 0;
+
+ for(;;){
+   // Enable interrupts on this processor.
+   sti();
+
+   // Loop over process table looking for process to run.
+   acquire(&ptable.lock);
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state != RUNNABLE)
+       continue;
+
+     // Switch to chosen process.  It is the process's job
+     // to release ptable.lock and then reacquire it
+     // before jumping back to us.
+     c->proc = p;
+     switchuvm(p);
+     p->state = RUNNING;
+
+     swtch(&(c->scheduler), p->context);
+     switchkvm();
+
+     // Process is done running for now.
+     // It should have changed its p->state before coming back.
+     c->proc = 0;
+   }
+   release(&ptable.lock);
+
+ }
+}
 
 //the lottery scheduling
 // void
@@ -453,74 +538,74 @@ wait(void)
 //   }
 // }
 //the stride scheduling
-void
-scheduler(void)
-{
-struct proc *p;
-struct cpu *c = mycpu();
-c->proc = 0;
+// void
+// scheduler(void)
+// {
+// struct proc *p;
+// struct cpu *c = mycpu();
+// c->proc = 0;
 
- for(;;){
-   // Enable interrupts on this processor.
-   sti();
+//  for(;;){
+//    // Enable interrupts on this processor.
+//    sti();
 
-   // Loop over process table looking for process to run.
-   acquire(&ptable.lock);
-   int minpass=0;
-   for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
-   {
-       if(p->state!=RUNNABLE)
-               continue;
-       minpass=p->passvalue;
-       break;
-   }
- //find the miniuxm value of runnable processes;  
-   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-       if(p->state != RUNNABLE){
-	       	continue;
-	}
-       if(p->passvalue<minpass)
-	{
-		minpass=p->passvalue;
-	}
+//    // Loop over process table looking for process to run.
+//    acquire(&ptable.lock);
+//    int minpass=0;
+//    for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+//    {
+//        if(p->state!=RUNNABLE)
+//                continue;
+//        minpass=p->passvalue;
+//        break;
+//    }
+//  //find the miniuxm value of runnable processes;  
+//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//        if(p->state != RUNNABLE){
+// 	       	continue;
+// 	}
+//        if(p->passvalue<minpass)
+// 	{
+// 		minpass=p->passvalue;
+// 	}
 
-   }
+//    }
 
-   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-       if(p->state != RUNNABLE)
-       {
-  	     continue;
-       }
-       if(p->passvalue!=minpass)
-  	{
-  		continue;
-  	}
-
-
-     // Switch to chosen process.  It is the process's job
-     // to release ptable.lock and then reacquire it
-     // before jumping back to us.
-     //
-     //add the passvalue and ticks
-     p->passvalue=p->passvalue+p->stride;
-     p->ticks=p->ticks+1;
+//    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+//        if(p->state != RUNNABLE)
+//        {
+//   	     continue;
+//        }
+//        if(p->passvalue!=minpass)
+//   	{
+//   		continue;
+//   	}
 
 
-     c->proc = p;
-     switchuvm(p);
-     p->state = RUNNING;
-     swtch(&(c->scheduler), p->context);
-     switchkvm();
+//      // Switch to chosen process.  It is the process's job
+//      // to release ptable.lock and then reacquire it
+//      // before jumping back to us.
+//      //
+//      //add the passvalue and ticks
+//      p->passvalue=p->passvalue+p->stride;
+//      p->ticks=p->ticks+1;
+
+
+//      c->proc = p;
+//      switchuvm(p);
+//      p->state = RUNNING;
+//      swtch(&(c->scheduler), p->context);
+//      switchkvm();
    
-     // Process is done running for now.
-     // It should have changed its p->state before coming back.
-     c->proc = 0;
-     break;
-   }
-   release(&ptable.lock);
+//      // Process is done running for now.
+//      // It should have changed its p->state before coming back.
+//      c->proc = 0;
+//      break;
+//    }
+//    release(&ptable.lock);
 
- }
-}
+//  }
+// }
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores

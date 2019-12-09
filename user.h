@@ -26,6 +26,7 @@ int uptime(void);
 int info(int);
 int settick(int);
 int tickprintf(int);
+int clone(void*, int);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
@@ -39,3 +40,9 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+//threadlib.c
+struct lock_t;
+void thread_create(void *(*start_routine)(void*), void *arg);
+void lock_init(struct lock_t *);
+void lock_acquire(struct lock_t *);
+void lock_release(struct lock_t *);

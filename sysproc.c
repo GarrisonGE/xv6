@@ -128,3 +128,12 @@ sys_tickprintf(void)
   else 
   return tickprintf(1);
 }
+int 
+sys_clone(void)
+{
+  void *stack;
+  int size;
+  argint(1, &size); 
+  argptr(0, (char **)&stack, size); 
+  return clone(stack,size);
+}

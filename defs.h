@@ -123,6 +123,7 @@ void            yield(void);
 int             info(int);
 int             settick(int);
 int             tickprintf(int);
+int             clone(void*, int);
 // swtch.S
 void            swtch(struct context**, struct context*);
 

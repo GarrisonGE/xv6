@@ -23,3 +23,4 @@
 #define SYS_info   22
 #define SYS_settick 23
 #define SYS_tickprintf 24
+#define SYS_clone     25
